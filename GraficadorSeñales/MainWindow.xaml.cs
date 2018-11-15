@@ -229,9 +229,7 @@ namespace GraficadorSeñales
         {
             txtEscalaAmplitud.IsEnabled = false;
         }
-
-        //
-        private void chTruncar_Checked(object sender, RoutedEventArgs e)
+      private void chTruncar_Checked(object sender, RoutedEventArgs e)
         {
             txtUmbral.IsEnabled = true;
         }
@@ -240,13 +238,50 @@ namespace GraficadorSeñales
             txtUmbral.IsEnabled = false;
         }
 
-       
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            Señal transformada = Señal.transformar(señal);
 
-       
+            transformada.actualizarAmplitudMaxima();
+
+            plnGraficaResultado.Points.Clear();
+
+
+            lblAmplitudMaximaY.Text = transformada.AmplitudMaxima.ToString("F");
+            lblAmplitudMaximaNegativaY.Text = "-" + transformada.AmplitudMaxima.ToString("F");
+
+            if (transformada != null)
+            {
+                //Recorrer una  coleccion o arreglo
+                foreach (Muestra muestra in transformada.Muestras)
+                {
+
+                    plnGraficaResultado.Points.Add(new Point((muestra.X - transformada.TiempoInicial) * scrContenedor_Resultado.Width, ((muestra.Y / transformada.AmplitudMaxima) * ((scrContenedor_Resultado.Height / 2.0) - 30) * -1)
+                    + (scrContenedor_Resultado.Height / 2)));
+                }
+
+            }
+
+
+            plnEjeXResultado.Points.Clear();
+            //Punto del Principio
+            plnEjeXResultado.Points.Add(new Point(0, (scrContenedor_Resultado.Height / 2)));
+            //Punto del Fin
+            plnEjeXResultado.Points.Add(new Point(((transformada.TiempoFinal - transformada.TiempoInicial) * scrContenedor_Resultado.Width), (scrContenedor_Resultado.Height / 2)));
+
+            //Punto del Principio
+            plnEjeYResultado.Points.Add(new Point(0 - transformada.TiempoInicial * scrContenedor_Resultado.Width, scrContenedor_Resultado.Height));
+            //Punto del Fin
+            plnEjeYResultado.Points.Add(new Point(0 - transformada.TiempoInicial * scrContenedor_Resultado.Width, scrContenedor_Resultado.Height * -1));
 
 
 
 
-        //
+
+
+
+
+        }
+
     }
 }

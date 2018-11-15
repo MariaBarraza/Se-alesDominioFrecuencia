@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Numerics;
 
 namespace GraficadorSeñales
 {
@@ -152,6 +153,31 @@ namespace GraficadorSeñales
                 instanteActual += periodoMuestreo;
             }
             return resultado;
+        }
+
+        public static Señal transformar(Señal señal)
+        {
+            SeñalPersonalizada transformada = new SeñalPersonalizada();
+
+            transformada.TiempoInicial = señal.TiempoInicial;
+            transformada.TiempoFinal = señal.TiempoFinal;
+            transformada.FrecuenciaMuestreo = señal.FrecuenciaMuestreo;
+
+            for(int k=0; k < señal.Muestras.Count; k++)
+            {
+                // si se pone solo la parte real la parte imaginaria se toma como 0 
+                Complex muestra = 0;
+                //sumatoria
+                //imaginaryOne le pone 0 a la parte real y 1 a la parte imaginaria
+                for(int n=0; n<señal.Muestras.Count;n++)
+                {
+                    muestra += señal.Muestras[n].Y * Complex.Exp(-2 * Math.PI * Complex.ImaginaryOne * k * n/señal.Muestras.Count);
+                }
+                // para obtener los numeros reales de un numero complejo se utiliza Magnitude
+                transformada.Muestras.Add(new Muestra(k, muestra.Magnitude));
+            }
+
+            return transformada;
         }
 
     }
