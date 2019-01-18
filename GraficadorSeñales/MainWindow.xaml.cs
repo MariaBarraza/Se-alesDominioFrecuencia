@@ -246,9 +246,12 @@ namespace GraficadorSeñales
 
             plnGraficaResultado.Points.Clear();
 
+            double res;
 
-            lblAmplitudMaximaY.Text = transformada.AmplitudMaxima.ToString("F");
-            lblAmplitudMaximaNegativaY.Text = "-" + transformada.AmplitudMaxima.ToString("F");
+            lblAmplitudMaximaY_Resultado.Text = transformada.AmplitudMaxima.ToString("F");
+            lblAmplitudMaximaNegativaY_Resultado.Text = "-" + transformada.AmplitudMaxima.ToString("F");
+            
+
 
             if (transformada != null)
             {
@@ -259,6 +262,24 @@ namespace GraficadorSeñales
                     plnGraficaResultado.Points.Add(new Point((muestra.X - transformada.TiempoInicial) * scrContenedor_Resultado.Width, ((muestra.Y / transformada.AmplitudMaxima) * ((scrContenedor_Resultado.Height / 2.0) - 30) * -1)
                     + (scrContenedor_Resultado.Height / 2)));
                 }
+
+                double valorMaximo = 0;
+                int indiceMaximo = 0;
+                int indiceActual = 0;
+                foreach (Muestra muestra in transformada.Muestras)
+                {
+                    if(muestra.Y > valorMaximo)
+                    {
+                        valorMaximo = muestra.Y;
+                        indiceMaximo = indiceActual;
+                    }
+                    indiceActual++;
+                    if(indiceActual > (double)transformada.Muestras.Count / 2.0)
+                    {
+                        break;
+                    }
+                }
+                //lblHz.Text = (((transformada.FrecuenciaMuestreo / 2) * indiceMaximo) / transformada.Muestras.Count).ToString("F");
 
             }
 

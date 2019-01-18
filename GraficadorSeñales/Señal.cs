@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Numerics;
 
 namespace GraficadorSeñales
@@ -174,7 +171,7 @@ namespace GraficadorSeñales
                     muestra += señal.Muestras[n].Y * Complex.Exp(-2 * Math.PI * Complex.ImaginaryOne * k * n/señal.Muestras.Count);
                 }
                 // para obtener los numeros reales de un numero complejo se utiliza Magnitude
-                transformada.Muestras.Add(new Muestra(k, muestra.Magnitude));
+                transformada.Muestras.Add(new Muestra((double)k/(double)señal.Muestras.Count, muestra.Magnitude));
             }
 
             return transformada;
