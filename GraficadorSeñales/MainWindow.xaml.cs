@@ -279,9 +279,13 @@ namespace GraficadorSeñales
                         break;
                     }
                 }
-                //lblHz.Text = (((transformada.FrecuenciaMuestreo / 2) * indiceMaximo) / transformada.Muestras.Count).ToString("F");
 
+
+                //calcular frecuencia fundamental
+                double frecuenciaFundamental = (double)indiceMaximo * señal.FrecuenciaMuestreo / (double)transformada.Muestras.Count;
+                lblFrecuenciaFundamental.Text = frecuenciaFundamental.ToString() + " Hz";
             }
+
 
 
             plnEjeXResultado.Points.Clear();
