@@ -1,17 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Microsoft.Win32; //aqui se tienen cosas exclusivas de la interfaz de windows
+using NAudio.Wave;
 
 namespace GraficadorSeñales
 {
@@ -23,84 +13,53 @@ namespace GraficadorSeñales
 
         double amplitudMaxima = 1;
         Señal señal;
-   
         Señal señalResultado;
 
         public MainWindow()
         {
             InitializeComponent();
-
-            
-            
-           
         }
 
         private void btnGraficar_Click(object sender, RoutedEventArgs e)
         {
+            var reader = new AudioFileReader(txtRutaArchivo.Text); //si se pone var al inicio se toma el tipo de dato que se establece despues, en este caso toma el tipo audiofilereader
+            double tiempoInicial = 0; //es 0 porque todos los archivos de audio empiezan en 0
+            double tiempoFinal = reader.TotalTime.TotalSeconds; // aqui revisa cuantos segundos dura el archivo de audio
+            double frecuenciaMuestreo = reader.WaveFormat.SampleRate; //dice la frecuencia de muestreo
 
-            double tiempoInicial =
-                double.Parse(txtTiempoInicial.Text);
-            double tiempoFinal =
-                double.Parse(txtTiempoFinal.Text);
-            double frecuenciaMuestreo =
-                double.Parse(txtFrecuenciaMuestreo.Text);
+            txtFrecuenciaMuestreo.Text = frecuenciaMuestreo.ToString();
+            txtTiempoInicial.Text = "0";
+            txtTiempoFinal.Text = tiempoFinal.ToString();
 
-            
+            //inicializar la señal
+            señal = new SeñalPersonalizada();
 
-            switch (cbTipoSeñal.SelectedIndex)
-            {
-                //Senoidal
-                case 0:
-                    double amplitud = double.Parse(((ConfiguracionSeñalSenoidal)(panelConfiguracion.Children[0])).txtAmplitud.Text);
-                    double fase = double.Parse(((ConfiguracionSeñalSenoidal)(panelConfiguracion.Children[0])).txtFase.Text);
-                    double frecuencia = double.Parse(((ConfiguracionSeñalSenoidal)(panelConfiguracion.Children[0])).txtFrecuencia.Text);
-                    señal = new SeñalSenoidal(amplitud, fase, frecuencia);
-                    break;
-                //Rampa
-                case 1:
-                    señal = new SeñalRampa();
-                    break;
-                case 2:
-                    double alpha = double.Parse(((ConfiguracionSeñalExponencial)(panelConfiguracion.Children[0])).txtAlpha.Text);
-                    señal = new SeñalExponencial(alpha);
-                    break;
-                case 3:
-                    señal = new SeñalRectangular();
-                    break;
-                default:
-                    señal = null;
-                    break;
-            }
             señal.TiempoInicial = tiempoInicial;
             señal.TiempoFinal = tiempoFinal;
             señal.FrecuenciaMuestreo = frecuenciaMuestreo;
 
-            
 
-          
+            //construir nuestra señal a traves del archivo de audio
+            //segun el numero de canales son los float que se ocupan mono=1 estereo=2 reader.WaveFormat.Channels esto dice cuantos canales son
+            var bufferLectura = new float[reader.WaveFormat.Channels];//se declara un buffer de lectura que es un arreglo de bites, audiofile reader maneja muestras de 32 bits y aqui se van a guardar las muestras y se van a leer poco a poco
 
-            señal.construirSeñalDigital();
-            
+            int muestrasLeidas = 1; //nos dice cuantas muestras lee con el buffer
+            double instanteActual = 0;
+            double intervaloMuestra = 1.0 / frecuenciaMuestreo; //es el tiempo que transcurre entre muestra y muestra
 
-            //Escalar 
-            if ((bool)chEscalaAmplitud.IsChecked)
+            do
             {
-                double FactorEscala = double.Parse(txtEscalaAmplitud.Text);
-                señal.escalar(FactorEscala);
-            }
-            if ((bool)chDesplazarY.IsChecked)
-            {
-                double FactorDesplazarY = double.Parse(txtDesplazarY.Text);
-                señal.desplazarY(FactorDesplazarY);
-                //
-            }
-            if ((bool)chTruncar.IsChecked)
-            { 
-            //truncar
-                float FactorUmbral = float.Parse(txtUmbral.Text);
-                señal.truncar(FactorUmbral);
-            }
-            //
+                //se leen tantas muestras como canales se tienen 
+                muestrasLeidas = reader.Read(bufferLectura, 0, reader.WaveFormat.Channels); //esta funcion lee las muestras, necesita varios parametros buffer, offset (cuantas muestras va a dejar pasar) y count cuanto va a leer
+                if (muestrasLeidas > 0)
+                {
+                    double max = bufferLectura.Take(muestrasLeidas).Max(); //aqui dice que tome todas las muestras leidas y que saque el maximo
+                    señal.Muestras.Add(new Muestra(instanteActual, max));
+                }
+
+                instanteActual += intervaloMuestra;
+
+            } while (muestrasLeidas > 0);
 
             señal.actualizarAmplitudMaxima();
            
@@ -135,12 +94,6 @@ namespace GraficadorSeñales
             plnEjeY.Points.Add(new Point(0 - tiempoInicial * scrContenedor.Width, scrContenedor.Height));
             //Punto del Fin
             plnEjeY.Points.Add(new Point(0-tiempoInicial*scrContenedor.Width,scrContenedor.Height*-1));
-
-      
-
-
-
-            
 
         }
 
@@ -177,66 +130,7 @@ namespace GraficadorSeñales
             }
         }
         
-        private void cbTipoSeñal_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            panelConfiguracion.Children.Clear();
-            if (panelConfiguracion != null)
-            {
-                panelConfiguracion.Children.Clear();
 
-                switch (cbTipoSeñal.SelectedIndex)
-                {
-                    case 0: //Senoidal
-                        panelConfiguracion.Children.Add(new ConfiguracionSeñalSenoidal());
-                        break;
-
-                    case 1:
-                        double alpha = double.Parse(((ConfiguracionSeñalExponencial)(panelConfiguracion.Children[0])).txtAlpha.Text);
-                        señal = new SeñalExponencial(alpha);
-                        break;
-
-                    case 2://Exponencial
-                        panelConfiguracion.Children.Add(new ConfiguracionSeñalExponencial());
-                        break;
-
-                    case 3:
-                        
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-
-        }
-
-       
-      
-        private void chDesplazarY_Checked(object sender, RoutedEventArgs e)
-        {
-            txtDesplazarY.IsEnabled = true;
-        }
-        private void chDesplazarY_Unchecked(object sender, RoutedEventArgs e)
-        {
-            txtDesplazarY.IsEnabled = false;
-        }
-
-        private void chEscalaAmplitud_Checked(object sender, RoutedEventArgs e)
-        {
-            txtEscalaAmplitud.IsEnabled= true;
-        }
-        private void chEscalaAmplitud_Unchecked(object sender, RoutedEventArgs e)
-        {
-            txtEscalaAmplitud.IsEnabled = false;
-        }
-      private void chTruncar_Checked(object sender, RoutedEventArgs e)
-        {
-            txtUmbral.IsEnabled = true;
-        }
-        private void chTruncar_Unchecked(object sender, RoutedEventArgs e)
-        {
-            txtUmbral.IsEnabled = false;
-        }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -286,8 +180,6 @@ namespace GraficadorSeñales
                 lblFrecuenciaFundamental.Text = frecuenciaFundamental.ToString() + " Hz";
             }
 
-
-
             plnEjeXResultado.Points.Clear();
             //Punto del Principio
             plnEjeXResultado.Points.Add(new Point(0, (scrContenedor_Resultado.Height / 2)));
@@ -299,14 +191,18 @@ namespace GraficadorSeñales
             //Punto del Fin
             plnEjeYResultado.Points.Add(new Point(0 - transformada.TiempoInicial * scrContenedor_Resultado.Width, scrContenedor_Resultado.Height * -1));
 
-
-
-
-
-
-
-
         }
 
+        private void btnExaminar_Click(object sender, RoutedEventArgs e)
+        {
+            //Abre cuadro de dialogo para seleccionar archivos para importar
+            OpenFileDialog fileDialog = new OpenFileDialog();
+
+            if ((bool)fileDialog.ShowDialog()) //se hace casting a bool para que en vez de 3 (true,false y null) opciones tenga 2 (true,false)
+            {
+                txtRutaArchivo.Text = fileDialog.FileName; // el nombre de la ruta seleccionada se queda guardada en el filedialog
+            }
+            
+        }
     }
 }
